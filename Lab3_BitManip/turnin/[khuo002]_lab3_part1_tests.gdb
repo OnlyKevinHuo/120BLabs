@@ -42,7 +42,13 @@ expectPORTC 0x01
 checkResult
 
 #Testing counting only from PINB
-test "PINA:0x00 && PINB: 0x05 => PORTC: 0x02"
+test "test "PINA: 0xF0 && PINB: 0x3F => PORTC: 0x0A"
+setPINA 0xF0
+setPINB 0x3F
+continue 5
+expectPORTC 0x0A
+checkResult
+PINA:0x00 && PINB: 0x05 => PORTC: 0x02"
 setPINA 0x00
 setPINB 0x05
 continue 5
@@ -57,6 +63,14 @@ continue 5
 expectPORTC 0x05
 checkResult
 
+#Testing counting 10+ bit case.
+test "PINA: 0xF0 && PINB: 0x3F => PORTC: 0x0A"
+setPINA 0xF0
+setPINB 0x3F
+continue 5
+expectPORTC 0x0A
+checkResult
+
 #Testing edge case of all 1's
 test "PINA: 0xFF && PINB: 0xFF => PORTC: 0x16"
 setPINA 0xFF
@@ -64,6 +78,7 @@ setPINB 0xFF
 continue 5
 expectPORTC 0x10
 checkResult
+
 
 # Report on how many tests passed/tests ran
 set $passed=$tests-$failed
