@@ -42,13 +42,7 @@ expectPORTC 0x01
 checkResult
 
 #Testing counting only from PINB
-test "test "PINA: 0xF0 && PINB: 0x3F => PORTC: 0x0A"
-setPINA 0xF0
-setPINB 0x3F
-continue 5
-expectPORTC 0x0A
-checkResult
-PINA:0x00 && PINB: 0x05 => PORTC: 0x02"
+test "PINA:0x00 && PINB: 0x05 => PORTC: 0x02"
 setPINA 0x00
 setPINB 0x05
 continue 5
