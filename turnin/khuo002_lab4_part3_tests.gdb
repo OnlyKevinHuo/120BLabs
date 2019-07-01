@@ -26,92 +26,55 @@
 echo ======================================================\n
 echo Running all tests..."\n\n
 
-#Testing Initialization
-test "PINA: 0x00 => PORTC: 0x07, state: Calc_Init"
+#Testing Direct Key W/ State Zero
+test "PINA: 0x00 => PORTB: 0x00, state: Zero"
 setPINA 0x00
-continue 5
-expectPORTC 0x07
-expect Calc_State Calc_Init
+continue 3
+expectPORTB 0x00
+expect Lock_State Zero
 
-#testing Adding 1
-test "PINA: 0x00, 0x01 => PORTC: 0x08, state: Calc_Wait"
-setPINA 0x00
-continue 7
+#Testing Direct Key W/ State Two
+test "PINA: 0x01 => PORTB: 0x00, state: Four"
 setPINA 0x01
 continue 3
 setPINA 0x00
-continue 7
-expectPORTC 0x08
-expect Calc_State Calc_Init
-checkResult
-
-#Testing Subtracting 1 and Returning to Init
-test "PINA: 0x00, 0x02 => PORTC: 0x06, state: Calc_Init"
-setPINA 0x00
 continue 3
+expectPORTB 0x00
+expect Lock_State Four
+
+#Testing Direct Key W/ State Four
+test "PINA: 0x02 => PORTB: 0x01, state: Five"
 setPINA 0x02
 continue 3
 setPINA 0x00
 continue 2
-expectPORTC 0x07
-expect Calc_State Calc_Init
-checkResult
+expectPORTB 0x01
+expect Lock_State Five
 
+#Testing Lock
+test "PINA: 0x80 => PORTB: 0x00, state: Zero"
+setPINA 0x80
+continue 3
+setPINA 0x00
+continue 3
+expectPORTB 0x00
+expect Lock_State Zero
 
-#Testing Adding 1 then Subtracting 2
-test "PINA: 0x00, 0x01, 0x00, 0x02(x2), 0x00 => PORTC: 0x06, state: Calc_Init"
-setPINA 0x00
-continue 4
-setPINA 0x01
-continue 5
-setPINA 0x00
-continue 5
+#Testing Incorrect Button
+test "PINA: 0x02 => PORTB: 0x00, State: Two"
 setPINA 0x02
 continue 3
+expectPORTB 0x00
+expect Lock_State Two
+
+
+test "PINA: 0x04 => PORTB: 0x00, State: Four"
 setPINA 0x00
-continue 4
-setPINA 0x02
 continue 5
-setPINA 0x00
-continue 6
-expectPORTC 0x06
-expect Calc_State Calc_Init
-checkResult
-
-#Testing Adding up to 9;
-test "PINA: 0x00, 0x01(x3) => PORTC: 0x01, state: LED_S1"
-setPINA 0x00
+setPINA 0x04
 continue 3
-setPINA 0x01
-continue 3
-setPINA 0x00
-continue 3
-setPINA 0x01
-continue 3
-setPINA 0x00
-continue 3
-setPINA 0x01
-continue 3
-setPINA 0x00
-continue 3
-setPINA 0x01
-continue 3
-setPINA 0x00
-continue 3
-
-expectPORTC 0x09
-expect Calc_State Calc_Init
-checkResult
-
-#Testing Reset from Init
-test "PINA: 0x03 => PORTC: 0x00, state: Calc_Wait"
-setPINA 0x03
-continue 3
-setPINA 0x00
-continue 4
-expectPORTC 0x00
-expect Calc_State Calc_Init
-checkResult
+expectPORTB 0x00
+expect Lock_State Three
 
 # Report on how many tests passed/tests ran
 set $passed=$tests-$failed
