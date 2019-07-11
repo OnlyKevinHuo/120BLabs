@@ -1,7 +1,7 @@
-/*	Author: khuo002
+/*	Author: khuo002i
  *  Partner(s) Name: 
  *	Lab Section:
- *	Assignment: Lab 6  Exercise 1
+ *	Assignment: Lab 7  Exercise 1
  *	Exercise Description: [optional - include for your own benefit]
  *
 *	I acknowledge all content contained herein, excluding template or example
@@ -11,7 +11,10 @@
 #include <avr/interrupt.h>
 #ifdef _SIMULATE_
 #include "simAVRHeader.h"
+//#include "io.h"
+
 #endif
+
 volatile unsigned char TimerFlag = 0;
 
 unsigned long _avr_timer_M = 0;
@@ -47,299 +50,168 @@ void TimerSet(unsigned long M){
 	_avr_timer_cntcurr = _avr_timer_M;
 }
 
-
-enum LED_States {Init, juan, jt, too, tt, tree, to} LED_State;
-/*
-void tick(){
-	switch(LED_State){
-		case Init:
-                  		LED_State = juan;
-        			break;
-		case juan:
-                  		LED_State = too;
-        			break;
-		case too:
-                  		LED_State = tree;
-        			break;
-		case tree:
-                  		LED_State = juan;
-        			break;
-		default:	
-			LED_State = Init;
-			break;
-	}		
-
-	switch(LED_State){
-		case Init:
-        			break;
-		case juan:
-                  		PORTC = 0x01;
-        			break;
-		case too:
-                  		PORTC = 0x02;
-        			break;
-		case tree:
-                  		PORTC = 0x04;
-        			break;
-		default:	
-			break;
+void set_PWM(double frequency){
+	static double current_frequency;
+	if(frequency != current_frequency){
+	if(!frequency){TCCR3B &= 0x08;}
+	else{TCCR3B |= 0x03;}
+	
+	if(frequency < 0.954){ OCR3A = 0xFFFF;}
+	else if(frequency > 31250){OCR3A = 0x0000;}
+	else{OCR3A = (short)(8000000/(128*frequency))-1;}
+	TCNT3 = 0;
+	current_frequency = frequency;
 	}
-} 
-*/
+}
+
+void PWM_on(){
+	TCCR3A = (1 << COM3A0);
+	TCCR3B = (1 << WGM32) | (1 << CS31) | (1<<CS30);
+	set_PWM(0);
+}
+
+void PWM_off(){
+	TCCR3A = 0x00;
+	TCCR3B = 0x00;
+}
+
+#define A0 (~PINA & 0x01)
+#define A1 (~PINA & 0x02)
+#define A2 (~PINA & 0x04)
+
+enum Speak_States{Init, off, on, CFOUR, DFOUR, EFOUR, FFOUR, GFOUR, AFOUR, BFOUR, C2FOUR} Speak_State;
+
 void tick(){
-	unsigned char mask = ~PINA & 0x01;
-        switch(LED_State){
-                case Init:
-                	LED_State = juan;
-                        break;
-                case juan:
-                        if(mask == 0x00 && PORTB == 0x00) LED_State = too;
-			if(mask == 0x01 && PORTB == 0x00) LED_State = juan;
-			if(mask == 0x00 && PORTB == 0x01) LED_State = juan;
-			if(mask == 0x01 && PORTB == 0x01) LED_State = jt;
-                        break;
-                case too:
-			if(mask == 0x00 && PORTB == 0x00) LED_State = tree;
-                        if(mask == 0x01 && PORTB == 0x00) LED_State = too;
-			if(mask == 0x00 && PORTB == 0x01) LED_State = too;
-			if(mask == 0x01 && PORTB == 0x01) LED_State = tt;
-                        break;
-                case tree:
-			if(mask == 0x00 && PORTB == 0x00) LED_State = juan;
-                        if(mask == 0x01 && PORTB == 0x00) LED_State = tree;
-			if(mask == 0x00 && PORTB == 0x00) LED_State = tree
-                        if(mask == 0x01 && PORTB == 0x01) LED_State = to;
-			break;
-		case jt:
-			LED_State = too;
-			break;
-		case tt: 
-			LED_State = tree;
-			break;
-		case to:
-			LED_State = juan;
-			break;      
-          default:        
-                        LED_State = Init;
-                        break;
-        }               
-
-        switch(LED_State){
-                case Init:
-                                break;
-                case juan:
-                        PORTC = 0x01;
-			if(mask == 0x01 && PORTB == 0x00) PORTB = 0x01;
-			break;
-                case too:
-                        PORTC = 0x02;
-                        if(mask == 0x01 && PORTB == 0x00) PORTB = 0x01;
-                        break;
-                case tree:
-                        PORTC = 0x04;
-			if(mask == 0x01 && PORTB == 0x00) PORTB = 0x01;
-                        break;
-		case jt:
-			PORTB = 0x00;
-			break;
-		case tt:
-                        PORTB = 0x00;
-                        break;
-		case to:
-                        PORTB = 0x00;
-                        break;
-
-                default:        
-                        break;
-        }
-} 
-
-void main(){
-        
-	DDRA = 0x00; PORTA = 0xFF;
-	DDRC = 0xFF;
-        PORTC = 0x00;
-        TimerSet(100);
-        TimerOn();
-        
-        while(1){
-                tick();
-                while(!TimerFlag);
-                TimerFlag = 0;
-        }
-}
-/*
-enum LED_States {Init, abyss, juan, too, tree, FOUR, pibuh, sicks, ravine} LED_State;
-
-void Flashing_Lights() {
-   unsigned char mask = ~PINA & 0x01;
-
-    switch(LED_State) { // Transitions
-	
-	case Init:
-		
-        LED_State = abyss;
-        break;
-	
-	case abyss:
-		if(mask == 0x01) LED_State = juan;
-		if(mask == 0x00) LED_State = abyss;
-        break;
-		
-    case juan: 
-		if(mask == 0x01 && PORTB == 0x00) LED_State  = too;
-		if(mask == 0x01 && PORTB == 0x001) LED_State  = abyss;
-		if(mask == 0x00) LED_State = juan;
-        break;
-		 
-    case too: 
-        if(mask == 0x01 && PORTB == 0x00) LED_State  = tree;
-		if(mask == 0x01 && PORTB == 0x001) LED_State  = juan;
-		if(mask == 0x00) LED_State = too;
-        break;
-	
-	case tree:
-		if(mask == 0x01 && PORTB == 0x00) LED_State  = FOUR;
-		if(mask == 0x01 && PORTB == 0x001) LED_State  = too;
-		if(mask == 0x00) LED_State = tree;
-        break;
-
-	case FOUR:
-		if(mask == 0x01 && PORTB == 0x00) LED_State  = pibuh;
-		if(mask == 0x01 && PORTB == 0x001) LED_State  = tree;
-		if(mask == 0x00) LED_State = FOUR;
-        break;
-		
-	case pibuh:
-		if(mask == 0x01 && PORTB == 0x00) LED_State  = sicks;
-		if(mask == 0x01 && PORTB == 0x001) LED_State  = FOUR;
-		if(mask == 0x00) LED_State = pibuh;
-        break;
-		
-	case sicks:
-		if(mask == 0x01 && PORTB == 0x00) LED_State = ravine;
-		if(mask == 0x01 && PORTB == 0x01) LED_State  = pibuh;
-		if(mask == 0x00) LED_State = sicks;
-        break;
-		
-	case ravine:
-		if(mask == 0x01) LED_State = sicks;
-		if(mask == 0x00) LED_State = ravine;
-        break;
-		
-        LED_State = sicks;
-        break;
-	  default:
-         LED_State  = Init;
-	break;
-   } // Transitions
-
-   switch(LED_State ) { // State actions
-   
+  switch(Speak_State){
     case Init:
-		PORTB = 0x00;
+        Speak_State = off;
         break;
-		 
-    case abyss:
-		PORTC = 0x00;
-		if(PORTB == 0x01){
-			PORTB = 0x00;
-			break;
-		}
-        break;
-		
-	case juan:
-        if(PORTB == 0x00){
-			PORTC = 0x01;
-			break;
-		}
-		if(PORTB == 0x01){
-			PORTC = 0x3F;
-			break;
-		}
-        break;
-		
-    case too:
-        if(PORTB == 0x00){
-			PORTC = 0x03;
-			break;
-		}
-		if(PORTB == 0x01){
-			PORTC = 0x3E;
-			break;
-		}
-        break;
-		
-	case tree:
-        if(PORTB == 0x00){
-			PORTC = 0x07;
-			break;
-		}
-		if(PORTB == 0x01){
-			PORTC = 0x3C;
-			break;
-		}
-        break;
-	
-	case FOUR:
-        if(PORTB == 0x00){
-			PORTC = 0x0F;
-			break;
-		}
-		if(PORTB == 0x01){
-			PORTC = 0x38;
-			break;
-		}
-        break;
-		 
-	case pibuh:
-        if(PORTB == 0x00){
-			PORTC = 0x1F;
-			break;
-		}
-		if(PORTB == 0x01){
-			PORTC = 0x30;
-			break;
-		}
-        break;
-		 
-	case sicks:
-        if(PORTB == 0x01){
-			PORTC = 0x20;
-			break;
-		}
-		if(PORTB == 0x01){
-			PORTC = 0x3E;
-			break;
-		}
-        break;
-		
-	case ravine:
-		PORTC = 0x00;
-		if(PORTB == 0x00){
-			PORTB = 0x01;
-			break;
-		}
-        break;
-    default: 
-		break;
-   } // State actions
 
+    case off:
+        if(A0) Speak_State = on;
+        else Speak_State = off;
+        break;
+
+    case on:
+        Speak_State = CFOUR;
+        break;
+    case CFOUR:
+        if(A0) Speak_State = off;
+	if(A1) Speak_State = DFOUR;
+        else Speak_State = CFOUR;
+        break;
+
+    case DFOUR:
+        if(A0) Speak_State = off;
+	if(A1) Speak_State = EFOUR;
+	if(A2) Speak_State = CFOUR;
+        else Speak_State = DFOUR;
+        break;
+
+    case EFOUR:
+        if(A0) Speak_State = off;
+	if(A1) Speak_State = FFOUR;
+	if(A2) Speak_State = DFOUR;
+        else Speak_State = EFOUR;
+	break;
+
+    case FFOUR:
+        if(A0) Speak_State = off;
+	if(A1) Speak_State = GFOUR;
+	if(A2) Speak_State = EFOUR;
+        else Speak_State = FFOUR;
+	break;
+    
+    case GFOUR:
+        if(A0) Speak_State = off;
+	if(A1) Speak_State = AFOUR;
+	if(A2) Speak_State = FFOUR;
+        else Speak_State = GFOUR;
+	break;
+
+    case AFOUR:
+        if(A0) Speak_State = off;
+	if(A1) Speak_State = BFOUR;
+	if(A2) Speak_State = GFOUR;
+        else Speak_State = AFOUR;
+	break;
+
+    case BFOUR:
+        if(A0) Speak_State = off;
+	if(A1) Speak_State = C2FOUR;
+	if(A2) Speak_State = AFOUR;
+        else Speak_State = BFOUR;
+	break;
+
+    case C2FOUR:
+        if(A0) Speak_State = off;
+	if(A2) Speak_State = BFOUR;
+        else Speak_State = C2FOUR;
+	break;
+
+    default:
+        Speak_State = off;
+        break;
+  }
+
+  switch(Speak_State){
+    case Init:
+        break;
+
+    case off:
+        set_PWM(0);
+        break;
+
+    case on:
+	set_PWM(0);
+	break; 
+    case CFOUR:
+        set_PWM(2616.3);
+        break;
+
+    case DFOUR:
+        set_PWM(2936.6);
+        break;
+
+    case EFOUR:
+        set_PWM(3296.3);
+        break;
+
+    case FFOUR:
+        set_PWM(3492.3);
+        break;
+
+    case GFOUR:
+        set_PWM(3290);
+        break;
+
+    case AFOUR:
+        set_PWM(4400);
+        break;
+
+    case BFOUR:
+        set_PWM(4938.8);
+        break;
+
+    case C2FOUR:
+        set_PWM(5232.5);
+        break;
+    default:
+        break;
+  }
 }
-
-int main(void) {
-	
+int main(){
+        
 	DDRA = 0x00; PORTA = 0xFF;
-	DDRC = 0xFF; PORTC = 0x00;
 	DDRB = 0xFF; PORTB = 0x00;
-	LED_State = Init;
-	
-
-    while (1) {
-		Flashing_Lights();
-    }
-        return 1;
+        
+        TimerSet(500);
+        TimerOn();
+	PWM_on();
+	while(1){
+	   	tick();
+		while(!TimerFlag);
+		TimerFlag = 0;
+	}
+	return 1;
 }
-*/
-
-
