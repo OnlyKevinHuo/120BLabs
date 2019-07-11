@@ -1,28 +1,25 @@
-/*	Author: khuo002i
- *  Partner(s) Name: 
- *	Lab Section:
- *	Assignment: Lab 7  Exercise 1
- *	Exercise Description: [optional - include for your own benefit]
- *
-*	I acknowledge all content contained herein, excluding template or example
- *	code, is my own original work.
- */
-//Lab 8 Exercise 2
+/*	Author: khuo002
+ *	 *  Partner(s) Name: 
+ *	  *	Lab Section:
+ *	   *	Assignment: Lab 10  Exercise 1
+ *	    *	Exercise Description: [optional - include for your own benefit]
+ *	     *
+ *	     *	I acknowledge all content contained herein, excluding template or example
+ *	      *	code, is my own original work.
+ *	       */
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #ifdef _SIMULATE_
 #include "simAVRHeader.h"
-#include "io.h"
+//#include "io.h"
 
 #endif
-
-volatile unsigned char TimerFlag = 0;
+volatile signed char TimerFlag = 0;
 
 unsigned long _avr_timer_M = 0;
 unsigned long _avr_timer_cntcurr = 0;
 
 signed int i = 0;
-const int SIZE = 8;
 
 void TimerOn(){
 	TCCR1B = 0x0B;
@@ -103,13 +100,13 @@ void tick(double freq[]){
 		
     case PLAY:
         if(A0) Speak_State = offWait;
-		if(A1 || A2) Speak_State = Wait;
+	else if(A1 || A2) Speak_State = Wait;
         else Speak_State = PLAY;
         break;
 
     case Wait:
         if(PORTC == 0x00) Speak_State = PLAY;
-		if(A0) Speak_State = offWait;
+	else if(A0) Speak_State = offWait;
 		else Speak_State = Wait;
         break;
 		
@@ -166,11 +163,12 @@ int main(){
 	DDRB = 0xFF; PORTB = 0x00;
  	DDRC = 0xFF; PORTC = 0x00;
 	
-	//double freg[SIZE] = {2616.3, 2936.6, 3296.3, 3492.3, 3920, 4400, 4938.8, 5232.5};
-	double freq[8] = {261.63, 293.66, 329.63, 349.23, 392, 440, 493.88, 523.35};
+	double freq[8] = {2616.3, 2936.6, 3296.3, 3492.3, 3920, 4400, 4938.8, 5232.5};
+//	double freq[8] = {261.63, 293.66, 329.63, 349.23, 392, 440, 493.88, 523.35};
     TimerSet(50);
     TimerOn();
 	PWM_on();
+	Speak_State = Init;
 	while(1){
 	   	tick(freq);
 		while(!TimerFlag);
@@ -178,3 +176,4 @@ int main(){
 	}
 	return 1;
 }	
+
