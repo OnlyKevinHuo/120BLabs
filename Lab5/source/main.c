@@ -295,7 +295,7 @@ int Player2Ticks(int state){
 	return state;
 }
 
-unsigned char walls_Pos[4] = {9, 10, 13, 26}; //test1
+unsigned char walls_Pos[4] = {13, 14, 0, 29}; //test1
 unsigned char wall_Clone[4];
 unsigned int j;
 unsigned char broken1 = 0;
@@ -330,9 +330,10 @@ int WallTick(int state){
 					wall_Clone[j] = walls_Pos[j];
 				}
 			}
-			for(j = 0; j < 4; j++){/*
+			for(j = 0; j < 4; j++){
+				if(wall_Clone[j] != 0) wall_Clone[j]--;
 				if(wall_Clone[j] == 16) wall_Clone[j] = 0;
-				if(wall_Clone[j] != 0) wall_Clone[j]--;*/
+
 				if(melee1 && (P1_Pos+1 == wall_Clone[j])) {broken1 = 1; score_Ones++; wall_Clone[j] = 0;}
 				if(melee2 && (P2_Pos+1 == wall_Clone[j])) {broken2 = 1; score_Ones++; wall_Clone[j] = 0;}
 			}
@@ -451,27 +452,22 @@ int main(){
 		task1.TickFct = &GameTick;
 		
                 task2.state = waitP12;
-                task2.period = 200;
+                task2.period = 300;
                 task2.elapsedTime = task2.period;
                 task2.TickFct = &Player1Ticks;
 
                 task3.state = waitP22;
-                task3.period = 200;
+                task3.period = 300;
                 task3.elapsedTime = task3.period;
                 task3.TickFct = &Player2Ticks;
-/*
-                task4.state = waitR;
-                task4.period = 200;
-                task4.elapsedTime = task4.period;
-                task4.TickFct = &RenderingTick;
-*/
+
                 task4.state = waitW;
-                task4.period = 200;
+                task4.period = 300;
                 task4.elapsedTime = task4.period;
                 task4.TickFct = &WallTick;
 
                 task5.state = waitR;
-                task5.period = 200;
+                task5.period = 300;
                 task5.elapsedTime = task5.period;
                 task5.TickFct = &RenderingTick;
 
