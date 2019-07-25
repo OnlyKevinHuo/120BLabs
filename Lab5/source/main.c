@@ -295,13 +295,13 @@ int Player2Ticks(int state){
 	return state;
 }
 
-//unsigned char walls_Pos[4] = {9, 10, 13, 26}; //test1
-//unsigned char wall_Clone[4];
+unsigned char walls_Pos[4] = {9, 10, 13, 26}; //test1
+unsigned char wall_Clone[4];
 unsigned int j;
 unsigned char broken1 = 0;
 unsigned char broken2 = 0;
-unsigned char wally1 = 19;
-unsigned char wally2 = 25;
+//unsigned char wally1 = 12;
+//unsigned char wally2 = 25;
 
 int WallTick(int state){
 	switch(state){
@@ -317,38 +317,40 @@ int WallTick(int state){
 	}
 	
 	switch(state){
-		case waitW:/*
+		case waitW:
 			for(j = 0; j < 4; j++){
 				wall_Clone[j] = walls_Pos[j];
-			}*/
+			}
 			break;
 			
 		case walls:
-			/*
+			
 			if(completed){
 				for(j = 0; j < 4; j++){
 					wall_Clone[j] = walls_Pos[j];
 				}
 			}
-			for(j = 0; j < 4; j++){
+			for(j = 0; j < 4; j++){/*
 				if(wall_Clone[j] == 16) wall_Clone[j] = 0;
-				if(wall_Clone[j] != 0) wall_Clone[j]--;
-				if(melee1 && P1_Pos+1 == wall_Clone[j]) {broken1 = 1; wall_Clone[j] = 0;}
-				if(melee2 && P2_Pos+1 == wall_Clone[j]) {broken2 = 1; wall_Clone[j] = 0;}
+				if(wall_Clone[j] != 0) wall_Clone[j]--;*/
+				if(melee1 && (P1_Pos+1 == wall_Clone[j])) {broken1 = 1; score_Ones++; wall_Clone[j] = 0;}
+				if(melee2 && (P2_Pos+1 == wall_Clone[j])) {broken2 = 1; score_Ones++; wall_Clone[j] = 0;}
 			}
-			
-			broken1 = 0;
-			broken2 = 0;
 
-			if(melee1){
-				if(P1_Pos+1 == wally1)  broken1 = 1; 
+
+/*
+                        if(melee1 && (P1_Pos+1 == wally1)){
+                                broken1 = 1;
+                                wally1 = 0;
+                        }
+
+			if(melee2 && (P2_Pos+1 == wally2)){ 
+				broken2 = 1;
+				wally2 = 0;
 			}
-			if(melee2){
-				if(P2_Pos+1 == wally2) broken2 = 1;
-			}*/
+*/
 			break;
 	}
-	
 	return state;
 }
 
@@ -389,28 +391,21 @@ int RenderingTick(int state){
 
 			PORTD = LEDs1 | LEDs2;
                         if(score_Ones >= 10){ score_Tens++; score_Ones -= 10;}			
-			if(P1_Pos == 14 && P2_Pos == 30) completed = 1;
-			unsigned char place = 0;
-			LCD_ClearScreen();
-			/*
-			for(j = 0; j < 4; j++){
-				if(wall_Clone[j] == P1_Pos || wall_Clone[j] == P2_Pos) deaded = 1; break;
-				place = wall_Clone[j];
-				if(wall_Clone[j] != 0 && !broken1 && !broken2){ LCD_Cursor(place); LCD_WriteData(5); }
-			}*/
-			if(P1_Pos == wally1 || P2_Pos == wally2) deaded = 1; break;
-			/*
-			if(!broken1){
-				LCD_Cursor(wally1);
-				LCD_WriteData(5);
+			if(P1_Pos == 14 && P2_Pos == 30){
+				completed = 1;
+				score_Ones += 2;
 			}
-			
-			if(!broken2){
-				LCD_Cursor(wally2);
-				LCD_WriteData(5);
-			}*/
-			LCD_Cursor(wally1);
-			LCD_WriteData(5);
+			LCD_ClearScreen();
+		   	
+			unsigned char place = 0;
+                        for(j = 0; j < 4; j++){
+			    place = wall_Clone[j];
+                            if(place == P1_Pos || place == P2_Pos){
+				 deaded = 1; break;}
+                            if(place != 0){ 
+			    	LCD_Cursor(place); LCD_WriteData(3);
+			    }
+                        }	
 
 			LCD_Cursor(P1_Pos);
 			LCD_WriteData(0);
@@ -424,10 +419,11 @@ int RenderingTick(int state){
 			
 			if(melee2){
 				LCD_Cursor(P2_Pos + 1);
-				if(!broken2) LCD_WriteData(3);
+				if(!broken2) LCD_WriteData(2);
 				else LCD_WriteData(4);
 			}
-
+			broken1 = 0;
+			broken2 = 0;
 			LCD_Cursor(15);
 			LCD_WriteData(score_Tens + '0');
 			LCD_Cursor(16);
@@ -463,8 +459,12 @@ int main(){
                 task3.period = 200;
                 task3.elapsedTime = task3.period;
                 task3.TickFct = &Player2Ticks;
-
-
+/*
+                task4.state = waitR;
+                task4.period = 200;
+                task4.elapsedTime = task4.period;
+                task4.TickFct = &RenderingTick;
+*/
                 task4.state = waitW;
                 task4.period = 200;
                 task4.elapsedTime = task4.period;
@@ -484,10 +484,9 @@ int main(){
 		LCD_Cust_Char(0, Character1);
 		LCD_Cust_Char(1, Character2);
 		LCD_Cust_Char(2, melee11);
-		LCD_Cust_Char(3, melee22);
+		LCD_Cust_Char(3, wall);
 		LCD_Cust_Char(4, explode);
-		LCD_Cust_Char(5, wall);
-
+		
 	while(1){
 
 		for(i = 0; i < numTasks; i++){
