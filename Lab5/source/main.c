@@ -4,26 +4,23 @@
 #include "simAVRHeader.h"
 #include "io.h"
 #endif
+#include <avr/eeprom.h>
 
 volatile signed char TimerFlag = 0;
 
 unsigned long _avr_timer_M = 0;
 unsigned long _avr_timer_cntcurr = 0;
-enum Game_States{init1, DisplayMenu, reswait, DisplayPlay, start, DisplayPScore, waiter1, DisplayHScore, waiter2}; //Text related items
+enum Game_States{init1, DisplayMenu, reswait, DisplayPlay, start, DisplayStat, waiter3, DisplayPScore, waiter1, DisplayHScore, waiter2}; //Text related items
 enum Player1{waitP12, P1_I, PlayingP1}; //Character1 Models, potentiall melee and response
 enum Player2{waitP22, P2_I, PlayingP2};
 enum Trump{waitW, walls};
-//enum Power_Ups{waitPu, PUing};
 enum Rendering{waitR, displayee}; //Rendering all models as well as Game Logic
 
 unsigned char Character1[8] = { 0x04, 0x1E, 0x08, 0x0C, 0x1F, 0x08, 0x1E, 0x12 };
 unsigned char Character2[8] = { 0x04, 0x1E, 0x08, 0x1F, 0x0C, 0x08, 0x1E, 0x12 };
-//unsigned char heart[8] = { 0x0A, 0x11, 0x1B, 0x1F, 0x1F, 0x0E, 0x04, 0x0E };
 unsigned char wall[8] = { 0x0B, 0x05, 0x0A, 0x1D, 0x1D, 0x0A, 0x05, 0x0B };
 unsigned char flag[8] = { 0x1F, 0x1E, 0x18, 0x10, 0x1F, 0x1E, 0x18, 0x10 };
 unsigned char melee11[8] = { 0x01, 0x02, 0x04, 0x1B, 0x1B, 0x04, 0x02, 0x01 };
-unsigned char melee22[8] = { 0x01, 0x02, 0x04, 0x1B, 0x1B, 0x04, 0x02, 0x01 };
-
 unsigned char explode[8] = { 0x11, 0x11, 0x0A, 0x15, 0x15, 0x0A, 0x11, 0x11 };
 
 #define A0 (~PINA & 0x01)
@@ -34,8 +31,18 @@ unsigned char explode[8] = { 0x11, 0x11, 0x0A, 0x15, 0x15, 0x0A, 0x11, 0x11 };
 #define P2B (~PINB & 0x10)
 #define P2X (~PINB & 0x20)
 
-unsigned char GetBit(unsigned char x, unsigned char k) {
-        return ((x & (0x01 << k)) != 0);
+char EEMEM EEVar;
+char totalScore = 0;
+char totalHScore = 0;
+
+void WriteE(char x){
+	eeprom_write_block((const void*)&x, (void*)&EEVar, sizeof(char));
+}
+
+char ReadE(void){
+	char temp;
+	eeprom_read_block((void*)&temp, (const void*)&EEVar, sizeof(char));
+	return temp;
 }
 
 typedef struct task{
@@ -79,10 +86,10 @@ unsigned char powah = 0;
 volatile unsigned char deaded = 0;
 unsigned char score_Ones = 0;
 unsigned char score_Tens = 0;
-unsigned char hold0 = 15;
-unsigned char hold1 = 15;
-//unsigned char hold2 = 20;
-
+unsigned char hold0 = 10;
+unsigned char hold1 = 10;
+unsigned char hold2 = 10;
+unsigned char levels_Done = 0;
 
 int GameTick(int state){
     switch(state){
@@ -102,9 +109,18 @@ int GameTick(int state){
 			break;
 			
         case start:
-            if(deaded == 1) state = DisplayPScore;
+            if(deaded) state = DisplayStat;
             else state = start;
             break;
+
+	case DisplayStat:
+	    state = waiter3; break;
+
+	case waiter3:
+	    if(hold2 <= 0) state = DisplayPScore;
+	    else if(A0) state = DisplayMenu;
+	    else state = waiter3;
+	    break;
 
         case DisplayPScore:
             state = waiter1; break;
@@ -139,10 +155,12 @@ int GameTick(int state){
         case reswait:
             hold0 = 10;
             hold1 = 10;
+	    hold2 = 10;
             powah = 0;
             deaded = 0;
             score_Ones = 0;
 	    score_Tens = 0;
+	    levels_Done = 0;
             break;
 				
         case DisplayPlay:
@@ -150,6 +168,16 @@ int GameTick(int state){
 	    break;				
 				
         case start:
+	    break;
+
+	case DisplayStat:
+	    LCD_ClearScreen();
+	    if(levels_Done < 3) LCD_DisplayString(1, "Bad Synergy");
+	    else LCD_DisplayString(1,"Good Synergy");
+	    break;
+
+	case waiter3:
+	    hold2--;
 	    break;
 
         case DisplayPScore:
@@ -166,7 +194,27 @@ int GameTick(int state){
 	case DisplayHScore:
             LCD_ClearScreen();
             LCD_DisplayString(1, "High Score: ");
-	break;
+	    totalScore = (score_Tens*10)+ score_Ones;
+	    totalHScore = ReadE();
+	    if(totalScore > totalHScore){
+	    	WriteE(totalScore);
+		LCD_WriteData(score_Tens + '0');
+		LCD_WriteData(score_Ones + '0');
+	    }
+	    else{ 
+	    	score_Ones = totalHScore % 10;
+		score_Tens = 0;
+		if(totalHScore > 9){
+			while(totalHScore > 0){
+				totalHScore-=10;
+				score_Tens++;
+			}
+			if(score_Ones != 0) score_Tens--;
+		}
+	    	LCD_WriteData(score_Tens + '0');
+	    	LCD_WriteData(score_Ones + '0');
+	    }
+	    break;
 
         case waiter2:
             hold1--;
@@ -199,7 +247,7 @@ int Player1Ticks(int state){
 			
 		case PlayingP1:
 			if(completed) state = P1_I;
-			else if(deaded) state = waitP12;
+			else if(deaded ) state = waitP12;
 			else state = PlayingP1;
 			break;
 			
@@ -295,9 +343,10 @@ int Player2Ticks(int state){
 	return state;
 }
 
-unsigned char walls_Pos[4] = {13, 14, 0, 29}; //test1
-unsigned char wall_Clone[4];
-unsigned int j;
+unsigned char walls_Pos[15] = {11, 12, 14, 15, 29, 13, 15, 22, 23 , 0, 9, 10, 12, 22, 23}; //test1
+unsigned char wall_Clone[5];
+unsigned int j = 0;
+unsigned int top = 0;
 unsigned char broken1 = 0;
 unsigned char broken2 = 0;
 //unsigned char wally1 = 12;
@@ -318,7 +367,8 @@ int WallTick(int state){
 	
 	switch(state){
 		case waitW:
-			for(j = 0; j < 4; j++){
+			top = 0;
+			for(j = 0; j < 5; j++){
 				wall_Clone[j] = walls_Pos[j];
 			}
 			break;
@@ -326,11 +376,19 @@ int WallTick(int state){
 		case walls:
 			
 			if(completed){
-				for(j = 0; j < 4; j++){
-					wall_Clone[j] = walls_Pos[j];
+			  if(top < 2){
+				top++;
+				for(j = 0; j < 5; j++){
+					wall_Clone[j] = walls_Pos[5*top+j];
 				}
+			  }
+			  else if(top >= 2){ 
+				top = 0;
+				for(j = 0; j < 5; j++){wall_Clone[j] = walls_Pos[j];}
+
+			  }
 			}
-			for(j = 0; j < 4; j++){
+			for(j = 0; j < 5; j++){
 				if(wall_Clone[j] != 0) wall_Clone[j]--;
 				if(wall_Clone[j] == 16) wall_Clone[j] = 0;
 
@@ -339,17 +397,7 @@ int WallTick(int state){
 			}
 
 
-/*
-                        if(melee1 && (P1_Pos+1 == wally1)){
-                                broken1 = 1;
-                                wally1 = 0;
-                        }
 
-			if(melee2 && (P2_Pos+1 == wally2)){ 
-				broken2 = 1;
-				wally2 = 0;
-			}
-*/
 			break;
 	}
 	return state;
@@ -395,7 +443,10 @@ int RenderingTick(int state){
 			if(P1_Pos == 14 && P2_Pos == 30){
 				completed = 1;
 				score_Ones += 2;
+				levels_Done++;
+				score_Ones += (melee1Uses + melee2Uses);
 			}
+
 			LCD_ClearScreen();
 		   	
 			unsigned char place = 0;
@@ -425,6 +476,11 @@ int RenderingTick(int state){
 			}
 			broken1 = 0;
 			broken2 = 0;
+			LCD_Cursor(14);
+			LCD_WriteData(5);
+			LCD_Cursor(30);
+			LCD_WriteData(5);
+			LCD_Cursor(5);
 			LCD_Cursor(15);
 			LCD_WriteData(score_Tens + '0');
 			LCD_Cursor(16);
@@ -482,7 +538,7 @@ int main(){
 		LCD_Cust_Char(2, melee11);
 		LCD_Cust_Char(3, wall);
 		LCD_Cust_Char(4, explode);
-		
+		LCD_Cust_Char(5, flag);
 	while(1){
 
 		for(i = 0; i < numTasks; i++){
