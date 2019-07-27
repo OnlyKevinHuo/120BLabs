@@ -76,3 +76,14 @@ void delay_ms(int miliSec)
    asm("nop");
   }
 }
+
+void LCD_Cust_Char(unsigned char loc, unsigned char *msg){
+
+   unsigned char i;
+   LCD_WriteCommand(0x40 + (loc*8));
+   for(i = 0; i < 8; i++){
+   	LCD_WriteData(msg[i]);
+   }
+   LCD_WriteCommand(0x80);
+}
+
